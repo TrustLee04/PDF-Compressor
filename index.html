@@ -92,17 +92,17 @@
                     <div class="space-y-3 mb-6">
                         <label class="text-xs font-medium text-slate-400 uppercase tracking-wider block">Chế độ nén nhanh</label>
                         <div class="grid grid-cols-3 gap-2">
-                            <button type="button" onclick="applyPreset('low')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
+                            <button type="button" id="btnPresetLow" onclick="applyPreset('low')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
                                 Nén Nhẹ
-                                <span class="block text-[10px] text-slate-500 font-normal">Chất lượng cao</span>
+                                <span class="block text-[10px] text-slate-400 font-normal mt-0.5">Chất lượng cao</span>
                             </button>
-                            <button type="button" onclick="applyPreset('medium')" class="preset-btn px-3 py-2 bg-brand-500/20 border border-brand-500 text-brand-400 rounded-xl text-xs font-medium text-center">
+                            <button type="button" id="btnPresetMedium" onclick="applyPreset('medium')" class="preset-btn px-3 py-2 bg-brand-500/20 border border-brand-500 text-brand-400 rounded-xl text-xs font-medium text-center">
                                 Cân Bằng
-                                <span class="block text-[10px] text-brand-400/70 font-normal">Khuyên dùng</span>
+                                <span class="block text-[10px] text-brand-400/70 font-normal mt-0.5">Khuyên dùng</span>
                             </button>
-                            <button type="button" onclick="applyPreset('high')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
+                            <button type="button" id="btnPresetHigh" onclick="applyPreset('high')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
                                 Nén Mạnh
-                                <span class="block text-[10px] text-slate-500 font-normal">Dung lượng cực nhỏ</span>
+                                <span class="block text-[10px] text-slate-400 font-normal mt-0.5">Dung lượng nhỏ</span>
                             </button>
                         </div>
                     </div>
@@ -250,6 +250,10 @@
         const scaleRange = document.getElementById('scaleRange');
         const scaleVal = document.getElementById('scaleVal');
 
+        const btnPresetLow = document.getElementById('btnPresetLow');
+        const btnPresetMedium = document.getElementById('btnPresetMedium');
+        const btnPresetHigh = document.getElementById('btnPresetHigh');
+
         const processingCard = document.getElementById('processingCard');
         const processStatus = document.getElementById('processStatus');
         const processPercentage = document.getElementById('processPercentage');
@@ -273,18 +277,39 @@
             scaleVal.textContent = parseFloat(e.target.value).toFixed(1) + 'x';
         });
 
-        // Preset Selector
+        // Preset Selector with UI state synchronization
         function applyPreset(level) {
+            // Reset styles for all preset buttons
+            const allPresetBtns = [btnPresetLow, btnPresetMedium, btnPresetHigh];
+            allPresetBtns.forEach(btn => {
+                btn.className = "preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center";
+                // Reset inner span text color
+                const span = btn.querySelector('span');
+                if (span) span.className = "block text-[10px] text-slate-400 font-normal mt-0.5";
+            });
+
+            let activeBtn;
             if (level === 'low') {
                 qualityRange.value = 0.8;
                 scaleRange.value = 1.8;
+                activeBtn = btnPresetLow;
             } else if (level === 'medium') {
                 qualityRange.value = 0.6;
                 scaleRange.value = 1.5;
+                activeBtn = btnPresetMedium;
             } else if (level === 'high') {
                 qualityRange.value = 0.35;
                 scaleRange.value = 1.0;
+                activeBtn = btnPresetHigh;
             }
+
+            // Apply active styles to the selected preset button
+            if (activeBtn) {
+                activeBtn.className = "preset-btn px-3 py-2 bg-brand-500/20 border border-brand-500 text-brand-400 rounded-xl text-xs font-medium text-center shadow-sm";
+                const span = activeBtn.querySelector('span');
+                if (span) span.className = "block text-[10px] text-brand-400/70 font-normal mt-0.5";
+            }
+
             qualityRange.dispatchEvent(new Event('input'));
             scaleRange.dispatchEvent(new Event('input'));
         }
