@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Tối Ưu Hóa & Nén PDF Bảo Mật (100% Offline/Client-side)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- pdf.js for rendering PDF pages to canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- pdf-lib for reconstructing optimized PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .drag-over {
+            border-color: #0284c7 !important;
+            background-color: rgba(2, 132, 199, 0.08) !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header & Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-500/20 text-brand-500 rounded-xl">
+                    <i data-lucide="file-check-2" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">SecurePDF Compressor</h1>
+                    <p class="text-xs text-slate-400">Nén PDF 100% Trực Tiếp Trên Trình Duyệt</p>
+                </div>
+            </div>
+            
+            <!-- Privacy Shield Badge -->
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-medium">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">100% Riêng Tư - Không Tải Lên Server</span>
+                <span class="sm:hidden">Chạy Local</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
+
+        <!-- Privacy Assurance Alert Banner -->
+        <div class="p-4 bg-slate-800/60 border border-slate-700/60 rounded-2xl flex items-start gap-3 text-sm text-slate-300 shadow-sm">
+            <i data-lucide="lock" class="w-5 h-5 text-brand-500 shrink-0 mt-0.5"></i>
+            <div>
+                <strong class="text-slate-100 font-semibold block mb-0.5">Đảm bảo an toàn dữ liệu cá nhân & bảo mật tuyệt đối:</strong>
+                Tệp PDF của bạn **không bao giờ rời khỏi thiết bị**. Toàn bộ quá trình giải mã, nén ảnh JPEG và tái tạo lại PDF đều được tính toán bằng phần cứng máy tính của bạn (Client-Side HTML5 Canvas + Web API). Bạn thậm chí có thể **tắt Wifi / Internet** sau khi tải xong trang này để sử dụng hoàn toàn offline.
+            </div>
+        </div>
+
+        <!-- App Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Settings Panel (Left Column) -->
+            <div class="lg:col-span-5 bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-6 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-100 flex items-center gap-2 mb-4">
+                        <i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>
+                        Cấu Hình Mức Độ Nén
+                    </h2>
+
+                    <!-- Preset Profiles -->
+                    <div class="space-y-3 mb-6">
+                        <label class="text-xs font-medium text-slate-400 uppercase tracking-wider block">Chế độ nén nhanh</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="applyPreset('low')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
+                                Nén Nhẹ
+                                <span class="block text-[10px] text-slate-500 font-normal">Chất lượng cao</span>
+                            </button>
+                            <button type="button" onclick="applyPreset('medium')" class="preset-btn px-3 py-2 bg-brand-500/20 border border-brand-500 text-brand-400 rounded-xl text-xs font-medium text-center">
+                                Cân Bằng
+                                <span class="block text-[10px] text-brand-400/70 font-normal">Khuyên dùng</span>
+                            </button>
+                            <button type="button" onclick="applyPreset('high')" class="preset-btn px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium hover:border-brand-500 transition-all text-center">
+                                Nén Mạnh
+                                <span class="block text-[10px] text-slate-500 font-normal">Dung lượng cực nhỏ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-700/50 my-4" />
+
+                    <!-- Fine-tuning Sliders -->
+                    <div class="space-y-5">
+                        <!-- Quality Slider -->
+                        <div>
+                            <div class="flex justify-between items-center text-sm mb-1.5">
+                                <label for="qualityRange" class="font-medium text-slate-300">Chất lượng ảnh (JPEG Quality)</label>
+                                <span id="qualityVal" class="font-mono text-xs px-2 py-0.5 bg-slate-700 rounded text-brand-400 font-semibold">60%</span>
+                            </div>
+                            <input type="range" id="qualityRange" min="0.1" max="0.95" step="0.05" value="0.6" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                            <p class="text-[11px] text-slate-400 mt-1">Giảm tỷ lệ này sẽ giảm đáng kể dung lượng của các hình ảnh trong PDF.</p>
+                        </div>
+
+                        <!-- Scale/DPI Slider -->
+                        <div>
+                            <div class="flex justify-between items-center text-sm mb-1.5">
+                                <label for="scaleRange" class="font-medium text-slate-300">Độ phân giải trang (Resolution / Scale)</label>
+                                <span id="scaleVal" class="font-mono text-xs px-2 py-0.5 bg-slate-700 rounded text-brand-400 font-semibold">1.5x</span>
+                            </div>
+                            <input type="range" id="scaleRange" min="0.5" max="2.0" step="0.1" value="1.5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                            <p class="text-[11px] text-slate-400 mt-1">Giảm kích thước pixel hình ảnh (Scale = 1.0 tương đương ~96-150 DPI thích hợp cho màn hình).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-700/50">
+                    <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-4 h-4 text-slate-500 shrink-0"></i>
+                        Trang web sử dụng kỹ thuật rasterization tối ưu hóa từng trang PDF thành canvas và tái tạo file PDF nén hoàn toàn mới.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Drag & Drop / Processing / Result Zone (Right Column) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Dropzone Area -->
+                <div id="dropzone" class="border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-800/20 rounded-2xl p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[280px]">
+                    <input type="file" id="fileInput" accept="application/pdf" class="hidden">
+                    <div class="p-4 bg-slate-800 text-brand-500 rounded-full mb-4 shadow-inner">
+                        <i data-lucide="upload-cloud" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-slate-200 mb-1">Kéo & Thả file PDF vào đây</h3>
+                    <p class="text-sm text-slate-400 mb-4">hoặc nhấn để chọn file từ máy tính của bạn</p>
+                    <button type="button" onclick="document.getElementById('fileInput').click()" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-brand-500/20">
+                        Chọn File PDF
+                    </button>
+                    <span class="text-xs text-slate-500 mt-3">Hỗ trợ các file .pdf lên đến vài trăm MB</span>
+                </div>
+
+                <!-- Processing & Progress View (Initially Hidden) -->
+                <div id="processingCard" class="hidden bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <span id="processStatus" class="font-medium text-slate-200 flex items-center gap-2">
+                            <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-brand-500"></i>
+                            Đang xử lý PDF...
+                        </span>
+                        <span id="processPercentage" class="font-mono text-xs text-brand-400 font-bold">0%</span>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                        <div id="progressBar" class="bg-brand-500 h-2.5 rounded-full transition-all duration-200 w-0"></div>
+                    </div>
+                    <p id="pageCounter" class="text-xs text-slate-400 text-right">Đang chuẩn bị...</p>
+                </div>
+
+                <!-- Result Card (Initially Hidden) -->
+                <div id="resultCard" class="hidden bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-100">Nén PDF Thành Công!</h3>
+                            <p id="fileNameText" class="text-xs text-slate-400 truncate max-w-xs">filename.pdf</p>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Matrix -->
+                    <div class="grid grid-cols-3 gap-3 bg-slate-900/60 p-4 rounded-xl text-center border border-slate-800">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">Dung lượng gốc</span>
+                            <span id="originalSizeText" class="font-mono text-sm font-semibold text-slate-300">0 MB</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">Dung lượng mới</span>
+                            <span id="compressedSizeText" class="font-mono text-sm font-semibold text-emerald-400">0 MB</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">Tiết kiệm</span>
+                            <span id="savingsText" class="font-mono text-sm font-bold text-brand-400">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-2">
+                        <button id="downloadBtn" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            Tải PDF Đã Nén
+                        </button>
+                        <button id="resetBtn" class="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-xl transition-all flex items-center justify-center">
+                            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-900 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>100% Client-Side Web Application • Không gửi dữ liệu tới máy chủ nào</p>
+            <p>Powered by PDF.js & PDF-Lib</p>
+        </div>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // Set pdf.js worker URL from standard CDN
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // State Variables
+        let selectedFile = null;
+        let compressedPdfBlob = null;
+        let isProcessing = false;
+
+        // DOM Elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityVal = document.getElementById('qualityVal');
+        const scaleRange = document.getElementById('scaleRange');
+        const scaleVal = document.getElementById('scaleVal');
+
+        const processingCard = document.getElementById('processingCard');
+        const processStatus = document.getElementById('processStatus');
+        const processPercentage = document.getElementById('processPercentage');
+        const progressBar = document.getElementById('progressBar');
+        const pageCounter = document.getElementById('pageCounter');
+
+        const resultCard = document.getElementById('resultCard');
+        const fileNameText = document.getElementById('fileNameText');
+        const originalSizeText = document.getElementById('originalSizeText');
+        const compressedSizeText = document.getElementById('compressedSizeText');
+        const savingsText = document.getElementById('savingsText');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Update Slider Indicators
+        qualityRange.addEventListener('input', (e) => {
+            qualityVal.textContent = Math.round(e.target.value * 100) + '%';
+        });
+
+        scaleRange.addEventListener('input', (e) => {
+            scaleVal.textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+        });
+
+        // Preset Selector
+        function applyPreset(level) {
+            if (level === 'low') {
+                qualityRange.value = 0.8;
+                scaleRange.value = 1.8;
+            } else if (level === 'medium') {
+                qualityRange.value = 0.6;
+                scaleRange.value = 1.5;
+            } else if (level === 'high') {
+                qualityRange.value = 0.35;
+                scaleRange.value = 1.0;
+            }
+            qualityRange.dispatchEvent(new Event('input'));
+            scaleRange.dispatchEvent(new Event('input'));
+        }
+
+        // Drag & Drop Handlers
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('drag-over');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('drag-over');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0 && files[0].type === 'application/pdf') {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (file.type !== 'application/pdf') {
+                alert('Vui lòng chỉ chọn tệp có định dạng PDF!');
+                return;
+            }
+            selectedFile = file;
+            startCompression();
+        }
+
+        // Format Byte Sizes
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // Core Compression Algorithm (Rasterization + JPEG Re-encoding + PDF Reconstruction)
+        async function startCompression() {
+            if (!selectedFile || isProcessing) return;
+            isProcessing = true;
+
+            // UI State updates
+            dropzone.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            processingCard.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            processPercentage.textContent = '0%';
+            pageCounter.textContent = 'Đang tải tệp PDF...';
+
+            try {
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                
+                // Load PDF document using PDF.js
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdfDoc = await loadingTask.promise;
+                const numPages = pdfDoc.numPages;
+
+                // Create a new empty PDF-Lib document
+                const newPdfDoc = await PDFLib.PDFDocument.create();
+
+                const quality = parseFloat(qualityRange.value);
+                const scale = parseFloat(scaleRange.value);
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    // Update progress
+                    const percent = Math.round(((pageNum - 1) / numPages) * 100);
+                    progressBar.style.width = percent + '%';
+                    processPercentage.textContent = percent + '%';
+                    pageCounter.textContent = `Đang tối ưu trang ${pageNum} trên tổng số ${numPages}...`;
+
+                    // Render page onto canvas
+                    const page = await pdfDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    await page.render(renderContext).promise;
+
+                    // Compress canvas to JPEG image blob
+                    const jpegUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                    // Embed JPEG into new PDF document
+                    const jpegImage = await newPdfDoc.embedJpg(jpegUrl);
+
+                    // Add page to new PDF with matching proportions
+                    const newPage = newPdfDoc.addPage([viewport.width / scale, viewport.height / scale]);
+                    newPage.drawImage(jpegImage, {
+                        x: 0,
+                        y: 0,
+                        width: viewport.width / scale,
+                        height: viewport.height / scale
+                    });
+                }
+
+                // Finalize PDF bytes
+                progressBar.style.width = '99%';
+                processPercentage.textContent = '99%';
+                pageCounter.textContent = 'Đang đóng gói file PDF...';
+
+                const pdfBytes = await newPdfDoc.save();
+                compressedPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+                // Update Progress to completion
+                progressBar.style.width = '100%';
+                processPercentage.textContent = '100%';
+
+                // Display Stats
+                setTimeout(() => {
+                    displayResults();
+                }, 400);
+
+            } catch (error) {
+                console.error(error);
+                alert('Có lỗi xảy ra trong quá trình nén PDF: ' + error.message);
+                resetApp();
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        function displayResults() {
+            processingCard.classList.add('hidden');
+            resultCard.classList.remove('hidden');
+
+            const origSize = selectedFile.size;
+            const compSize = compressedPdfBlob.size;
+            const savings = Math.max(0, ((origSize - compSize) / origSize * 100)).toFixed(1);
+
+            fileNameText.textContent = selectedFile.name;
+            originalSizeText.textContent = formatBytes(origSize);
+            compressedSizeText.textContent = formatBytes(compSize);
+            savingsText.textContent = `${savings}%`;
+
+            if (compSize > origSize) {
+                savingsText.textContent = '+ 0%';
+                savingsText.className = 'font-mono text-sm font-bold text-amber-400';
+            } else {
+                savingsText.className = 'font-mono text-sm font-bold text-brand-400';
+            }
+        }
+
+        // Download Action
+        downloadBtn.addEventListener('click', () => {
+            if (!compressedPdfBlob) return;
+            const link = document.createElement('a');
+            const originalName = selectedFile.name.replace(/\.pdf$/i, '');
+            link.href = URL.createObjectURL(compressedPdfBlob);
+            link.download = `${originalName}_compressed.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Reset App
+        resetBtn.addEventListener('click', resetApp);
+
+        function resetApp() {
+            selectedFile = null;
+            compressedPdfBlob = null;
+            fileInput.value = '';
+            resultCard.classList.add('hidden');
+            processingCard.classList.add('hidden');
+            dropzone.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
