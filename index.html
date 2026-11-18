@@ -209,9 +209,9 @@
                             <i data-lucide="download" class="w-5 h-5"></i>
                             Tải PDF Đã Nén
                         </button>
-                        <button id="shareBtn" class="hidden flex-1 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20">
+                        <button id="shareZaloBtn" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
                             <i data-lucide="share-2" class="w-5 h-5"></i>
-                            Chia Sẻ Nhanh
+                            Gửi nhanh qua Zalo / Mạng xã hội
                         </button>
                         <button id="resetBtn" class="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium rounded-xl transition-all flex items-center justify-center">
                             <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
@@ -270,7 +270,7 @@
         const compressedSizeText = document.getElementById('compressedSizeText');
         const savingsText = document.getElementById('savingsText');
         const downloadBtn = document.getElementById('downloadBtn');
-        const shareBtn = document.getElementById('shareBtn');
+        const shareBtn = document.getElementById('shareZaloBtn');
         const resetBtn = document.getElementById('resetBtn');
 
         // Update Slider Indicators
@@ -493,11 +493,8 @@
             document.body.removeChild(link);
         });
 
-        if (navigator.canShare && navigator.canShare({ files: [new File([], "test.pdf", { type: "application/pdf" })] })) {
-            shareBtn.classList.remove('hidden'); // Hiển thị nút nếu thiết bị hỗ trợ
-        }
-        
-        shareBtn.addEventListener('click', async () => {
+        //share action
+        shareZaloBtn.addEventListener('click', async () => {
             if (!compressedPdfBlob) return;
             
             const originalName = selectedFile.name.replace(/\.pdf$/i, '');
@@ -505,17 +502,18 @@
                 type: 'application/pdf'
             });
         
-            try {
-                await navigator.share({
-                    title: 'Tệp PDF đã nén',
-                    text: 'Chia sẻ tệp PDF tối ưu dung lượng từ SecurePDF Compressor',
-                    files: [compressedFile],
-                });
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error('Lỗi khi chia sẻ:', error);
-                    alert('Trình duyệt hoặc thiết bị của bạn không hỗ trợ chia sẻ trực tiếp file này.');
+            if (navigator.canShare && navigator.canShare({ files: [compressedFile] })) {
+                try {
+                    await navigator.share({
+                        title: 'Tệp PDF đã nén',
+                        text: 'Gửi bạn file PDF đã được tối ưu dung lượng.',
+                        files: [compressedFile],
+                    });
+                } catch (error) {
+                    if (error.name !== 'AbortError') console.error(error);
                 }
+            } else {
+                alert('Trình duyệt hoặc thiết bị của bạn không hỗ trợ chia sẻ file trực tiếp. Vui lòng bấm "Tải Xuống" rồi gửi thủ công qua Zalo nhé!');
             }
         });
         // Reset App
